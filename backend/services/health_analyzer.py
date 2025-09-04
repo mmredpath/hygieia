@@ -200,6 +200,9 @@ class HealthAnalyzer:
             if len(aligned_data) < 10:
                 return {"status": "error", "message": "Need at least 10 data points for training"}
             
+            # Set user context so chat knows we're trained
+            self.user_context = {"trained": True, "data_points": len(aligned_data)}
+            
             features, targets = self._create_features_and_targets(aligned_data)
             results = {"models_trained": [], "performance": {}, "data_points": len(aligned_data)}
             
@@ -363,6 +366,7 @@ class HealthAnalyzer:
         """Load trained models from disk"""
         try:
             if os.path.exists(self.model_dir):
+                model_count = 0
                 for file in os.listdir(self.model_dir):
                     if file.endswith('_model.pkl'):
                         target_name = file.replace('_model.pkl', '')
@@ -372,6 +376,11 @@ class HealthAnalyzer:
                         if os.path.exists(os.path.join(self.model_dir, scaler_file)):
                             with open(os.path.join(self.model_dir, scaler_file), 'rb') as f:
                                 self.scalers[target_name] = pickle.load(f)
+                        model_count += 1
+                
+                # If we loaded models, set user context
+                if model_count > 0:
+                    self.user_context = {"trained": True, "models_loaded": model_count}
         except:
             pass
     
