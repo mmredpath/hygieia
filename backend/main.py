@@ -30,7 +30,7 @@ app.add_middleware(
 
 # Initialize services
 oura_service = OuraService()
-health_analyzer = HealthAnalyzer()
+health_analyzer = HealthAnalyzer("demo_user")
 data_processor = DataProcessor()
 
 # In-memory storage for demo (replace with database in production)
@@ -193,7 +193,31 @@ async def get_health_story():
             }
         }
 
+@app.post("/health/ai/train", tags=["AI Training"])
+async def train_ai_model():
+    """Train AI model on user's health data"""
+    try:
+        dashboard_data = await get_dashboard_data()
+        if not dashboard_data["metrics"] or dashboard_data["source"] == "none":
+            return {"status": "no_data", "message": "No health data available for training"}
+        
+        result = health_analyzer.train_ml_models(dashboard_data["metrics"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
 
+@app.post("/health/chat", tags=["AI Chat"])
+async def chat_with_ai(request: ChatRequest):
+    """Chat with AI using trained models"""
+    try:
+        response = health_analyzer.chat_with_ai(request.question)
+        return response
+    except Exception as e:
+        return {
+            "response": "I encountered an error. Please try again.",
+            "confidence": 0.0,
+            "model_based": False
+        }
 
 if __name__ == "__main__":
     import uvicorn
