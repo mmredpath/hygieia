@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Activity, Heart, Moon, Zap, Upload, ChevronLeft, ChevronRight, Sun, Palette } from 'lucide-react'
+import { Activity, Heart, Moon, Zap, Upload, ChevronLeft, ChevronRight, Sun, Palette, Brain } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import Link from 'next/link'
 
@@ -30,6 +30,11 @@ export default function Dashboard() {
   const [darkMode, setDarkMode] = useState(false)
   const [uiStyle, setUiStyle] = useState('default')
   const [healthStory, setHealthStory] = useState(null)
+  const [chatMessages, setChatMessages] = useState<Array<{type: 'user' | 'ai', message: string, confidence?: number}>>([])
+  const [chatInput, setChatInput] = useState('')
+  const [isLoadingChat, setIsLoadingChat] = useState(false)
+  const [isTrainingAI, setIsTrainingAI] = useState(false)
+  const [aiTrained, setAiTrained] = useState(false)
 
   useEffect(() => {
     // Check if connected via URL parameter
@@ -74,6 +79,74 @@ export default function Dashboard() {
     window.location.href = 'http://localhost:8000/auth/oura'
   }
 
+  const sendChatMessage = async (message: string) => {
+    if (!message.trim() || isLoadingChat) return
+    
+    setChatMessages(prev => [...prev, { type: 'user', message }])
+    setChatInput('')
+    setIsLoadingChat(true)
+    
+    try {
+      const response = await fetch('http://localhost:8000/health/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: message })
+      })
+      
+      const data = await response.json()
+      
+      setChatMessages(prev => [...prev, { 
+        type: 'ai', 
+        message: data.response, 
+        confidence: data.confidence 
+      }])
+    } catch (error) {
+      setChatMessages(prev => [...prev, { 
+        type: 'ai', 
+        message: 'Sorry, I had trouble processing your question. Please try again.' 
+      }])
+    } finally {
+      setIsLoadingChat(false)
+    }
+  }
+
+  const handleQuestionClick = (question: string) => {
+    sendChatMessage(question)
+  }
+
+  const quickTrainAI = async () => {
+    setIsTrainingAI(true)
+    
+    try {
+      const response = await fetch('http://localhost:8000/health/ai/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const result = await response.json()
+      
+      if (result.status === 'trained') {
+        setAiTrained(true)
+        setChatMessages(prev => [...prev, {
+          type: 'ai',
+          message: `AI model trained successfully! I analyzed ${result.data_points} data points and created ${result.ml_models_trained || result.models_trained?.length || 0} ML models. You can now ask me questions about your health patterns.`
+        }])
+      } else {
+        setChatMessages(prev => [...prev, {
+          type: 'ai',
+          message: result.message || 'Training failed. Please ensure you have health data connected.'
+        }])
+      }
+    } catch (error) {
+      setChatMessages(prev => [...prev, {
+        type: 'ai',
+        message: 'Failed to train AI model. Please try again.'
+      }])
+    } finally {
+      setIsTrainingAI(false)
+    }
+  }
+
   if (!healthData) return <div className="p-8">Loading...</div>
 
   // Check if we have any actual data
@@ -90,8 +163,8 @@ export default function Dashboard() {
             {/* Day Navigation */}
             <div className={`flex items-center space-x-2 rounded-lg shadow px-4 py-2 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
               <button
-                onClick={() => setCurrentDayIndex(Math.min((healthData?.metrics.sleep.length || 1) - 1, currentDayIndex + 1))}
-                disabled={!healthData || currentDayIndex >= (healthData.metrics.sleep.length - 1)}
+                onClick={() => setCurrentDayIndex(Math.min((healthData?.metrics?.sleep?.length || 1) - 1, currentDayIndex + 1))}
+                disabled={!healthData || !healthData.metrics?.sleep || currentDayIndex >= (healthData.metrics.sleep.length - 1)}
                 className={`p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                 title="Previous day"
               >
@@ -99,7 +172,7 @@ export default function Dashboard() {
               </button>
               
               <span className={`text-sm font-medium min-w-[100px] text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                {healthData?.metrics.sleep[currentDayIndex]?.date 
+                {healthData?.metrics?.sleep?.[currentDayIndex]?.date 
                   ? new Date(healthData.metrics.sleep[currentDayIndex].date).toLocaleDateString('en-US', { 
                       month: 'short', 
                       day: 'numeric' 
@@ -273,59 +346,116 @@ export default function Dashboard() {
         )}
 
         {/* AI Chat */}
-        {hasData && (
-          <div className={`rounded-lg shadow p-6 mt-8 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>💬 Ask Your Health AI</h2>
-            <div className="space-y-4">
-              <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-2`}>Try asking:</p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    "How does my sleep affect my activity?",
-                    "What's my optimal sleep duration?",
-                    "Why was my heart rate elevated?",
-                    "Should I take a rest day?"
-                  ].map((question, i) => (
-                    <button
-                      key={i}
-                      className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                        darkMode 
-                          ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' 
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      } border`}
-                    >
-                      {question}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ask about your health patterns..."
-                  className={`flex-1 px-4 py-2 rounded-lg border ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  }`}
-                />
-                <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                  Ask AI
+        <div className={`rounded-lg shadow p-6 mt-8 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>💬 Ask Your Health AI</h2>
+            <div className="flex gap-2">
+              {!aiTrained && hasData && (
+                <button
+                  onClick={quickTrainAI}
+                  disabled={isTrainingAI}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Brain className="w-4 h-4" />
+                  {isTrainingAI ? 'Training...' : 'Quick Train'}
                 </button>
-              </div>
+              )}
+              <Link 
+                href="/ai-trainer"
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm flex items-center gap-2"
+              >
+                <Brain className="w-4 h-4" />
+                AI Trainer
+              </Link>
             </div>
           </div>
-        )}
+          
+          {/* Chat Messages */}
+          {chatMessages.length > 0 && (
+            <div className={`max-h-64 overflow-y-auto mb-4 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`mb-3 ${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
+                  <div className={`inline-block max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                    msg.type === 'user' 
+                      ? 'bg-blue-600 text-white' 
+                      : darkMode ? 'bg-gray-600 text-gray-100' : 'bg-white text-gray-900'
+                  }`}>
+                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                    {msg.confidence && (
+                      <p className="text-xs opacity-75 mt-1">Confidence: {(msg.confidence * 100).toFixed(0)}%</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isLoadingChat && (
+                <div className="text-left">
+                  <div className={`inline-block px-3 py-2 rounded-lg ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
+                    <p className="text-sm">AI is thinking...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+              <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-2`}>Try asking:</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "How does my sleep affect my activity?",
+                  "What's my optimal sleep duration?",
+                  "Why was my heart rate elevated?",
+                  "Should I take a rest day?"
+                ].map((question, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleQuestionClick(question)}
+                    disabled={isLoadingChat}
+                    className={`px-3 py-1 rounded-full text-xs transition-colors disabled:opacity-50 ${
+                      darkMode 
+                        ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' 
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    } border`}
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage(chatInput)}
+                placeholder="Ask about your health patterns..."
+                disabled={isLoadingChat}
+                className={`flex-1 px-4 py-2 rounded-lg border disabled:opacity-50 ${
+                  darkMode 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+              <button 
+                onClick={() => sendChatMessage(chatInput)}
+                disabled={isLoadingChat || !chatInput.trim()}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingChat ? 'Asking...' : 'Ask AI'}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
 
   function renderMetricsCards() {
     const metrics = [
-      { title: "Sleep", value: `${healthData.metrics.sleep[currentDayIndex]?.value || 0}h`, icon: <Moon className="w-6 h-6" />, color: "bg-health-sleep" },
-      { title: "Steps", value: (healthData.metrics.steps[currentDayIndex]?.value || 0).toLocaleString(), icon: <Activity className="w-6 h-6" />, color: "bg-health-activity" },
-      { title: "Heart Rate", value: `${healthData.metrics.heart_rate[currentDayIndex]?.value || 0} bpm`, icon: <Heart className="w-6 h-6" />, color: "bg-health-heart" },
-      { title: "Calories", value: (healthData.metrics.calories[currentDayIndex]?.value || 0).toLocaleString(), icon: <Zap className="w-6 h-6" />, color: "bg-health-nutrition" }
+      { title: "Sleep", value: `${healthData?.metrics?.sleep?.[currentDayIndex]?.value || 0}h`, icon: <Moon className="w-6 h-6" />, color: "bg-health-sleep" },
+      { title: "Steps", value: (healthData?.metrics?.steps?.[currentDayIndex]?.value || 0).toLocaleString(), icon: <Activity className="w-6 h-6" />, color: "bg-health-activity" },
+      { title: "Heart Rate", value: `${healthData?.metrics?.heart_rate?.[currentDayIndex]?.value || 0} bpm`, icon: <Heart className="w-6 h-6" />, color: "bg-health-heart" },
+      { title: "Calories", value: (healthData?.metrics?.calories?.[currentDayIndex]?.value || 0).toLocaleString(), icon: <Zap className="w-6 h-6" />, color: "bg-health-nutrition" }
     ]
 
     switch (uiStyle) {
@@ -534,13 +664,13 @@ export default function Dashboard() {
                 <div>
                   <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Avg Sleep: </span>
                   <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {(healthData.metrics.sleep.slice(-7).reduce((sum, item) => sum + item.value, 0) / 7).toFixed(1)}h
+                    {healthData?.metrics?.sleep ? (healthData.metrics.sleep.slice(-7).reduce((sum, item) => sum + item.value, 0) / 7).toFixed(1) : '0'}h
                   </span>
                 </div>
                 <div>
                   <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Avg Steps: </span>
                   <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {Math.round(healthData.metrics.steps.slice(-7).reduce((sum, item) => sum + item.value, 0) / 7).toLocaleString()}
+                    {healthData?.metrics?.steps ? Math.round(healthData.metrics.steps.slice(-7).reduce((sum, item) => sum + item.value, 0) / 7).toLocaleString() : '0'}
                   </span>
                 </div>
               </div>

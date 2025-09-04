@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from typing import Dict, Any
+from pydantic import BaseModel
 
 from services.oura_service import OuraService
 from services.health_analyzer import HealthAnalyzer
@@ -27,6 +28,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request models
+class ChatRequest(BaseModel):
+    question: str
 
 # Initialize services
 oura_service = OuraService()

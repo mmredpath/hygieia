@@ -362,15 +362,16 @@ class HealthAnalyzer:
     def _load_models(self):
         """Load trained models from disk"""
         try:
-            for file in os.listdir(self.model_dir) if os.path.exists(self.model_dir) else []:
-                if file.endswith('_model.pkl'):
-                    target_name = file.replace('_model.pkl', '')
-                    with open(os.path.join(self.model_dir, file), 'rb') as f:
-                        self.models[target_name] = pickle.load(f)
-                    scaler_file = f"{target_name}_scaler.pkl"
-                    if os.path.exists(os.path.join(self.model_dir, scaler_file)):
-                        with open(os.path.join(self.model_dir, scaler_file), 'rb') as f:
-                            self.scalers[target_name] = pickle.load(f)
+            if os.path.exists(self.model_dir):
+                for file in os.listdir(self.model_dir):
+                    if file.endswith('_model.pkl'):
+                        target_name = file.replace('_model.pkl', '')
+                        with open(os.path.join(self.model_dir, file), 'rb') as f:
+                            self.models[target_name] = pickle.load(f)
+                        scaler_file = f"{target_name}_scaler.pkl"
+                        if os.path.exists(os.path.join(self.model_dir, scaler_file)):
+                            with open(os.path.join(self.model_dir, scaler_file), 'rb') as f:
+                                self.scalers[target_name] = pickle.load(f)
         except:
             pass
     
