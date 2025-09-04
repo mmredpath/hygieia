@@ -39,15 +39,8 @@ export default function AITrainerPage() {
   }, []);
 
   const checkExistingModel = async () => {
-    try {
-      const response = await fetch(`http://localhost:8000/ai/models/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setModelInfo(data);
-      }
-    } catch (error) {
-      console.log('No existing model found');
-    }
+    // Skip model check for now since we don't have a model info endpoint
+    // The training will show if models exist
   };
 
   const startTraining = async () => {
@@ -55,32 +48,29 @@ export default function AITrainerPage() {
     setTrainingStatus({ status: 'starting', progress: 0 });
 
     try {
-      const response = await fetch('http://localhost:8000/ai/train', {
+      const response = await fetch('http://localhost:8000/health/ai/train', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId })
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      if (response.ok) {
-        // Poll for training status
-        const pollStatus = setInterval(async () => {
-          const statusResponse = await fetch(`http://localhost:8000/ai/training-status/${userId}`);
-          const status = await statusResponse.json();
-          setTrainingStatus(status);
-
-          if (status.status === 'completed') {
-            clearInterval(pollStatus);
-            setIsTraining(false);
-            checkExistingModel();
-          } else if (status.status === 'failed') {
-            clearInterval(pollStatus);
-            setIsTraining(false);
-          }
-        }, 1000);
+      const result = await response.json();
+      
+      if (result.status === 'trained') {
+        setTrainingStatus({ status: 'completed', progress: 100 });
+        setModelInfo({
+          model_id: 'demo_model',
+          trained_at: new Date().toISOString(),
+          training_samples: result.data_points || 0,
+          status: 'ready',
+          capabilities: result.models_trained || []
+        });
+      } else {
+        setTrainingStatus({ status: 'failed', progress: 0, error: result.message });
       }
     } catch (error) {
-      setIsTraining(false);
       setTrainingStatus({ status: 'failed', progress: 0, error: 'Training failed' });
+    } finally {
+      setIsTraining(false);
     }
   };
 
@@ -98,17 +88,17 @@ export default function AITrainerPage() {
     setCurrentQuestion('');
 
     try {
-      const response = await fetch('http://localhost:8000/ai/ask', {
+      const response = await fetch('http://localhost:8000/health/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, question: currentQuestion })
+        body: JSON.stringify({ question: currentQuestion })
       });
 
       const data = await response.json();
       
       const aiMessage: ChatMessage = {
         type: 'ai',
-        message: data.answer || 'Sorry, I couldn\'t process that question.',
+        message: data.response || 'Sorry, I couldn\'t process that question.',
         timestamp: new Date().toLocaleTimeString()
       };
 
