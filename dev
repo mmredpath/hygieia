@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Hygieia Development Script
+set -e
+
+case "$1" in
+  "start")
+    echo "🚀 Starting Hygieia Health Aggregator..."
+    echo ""
+    
+    # Install backend dependencies
+    echo "📦 Installing backend dependencies..."
+    cd backend
+    poetry install --quiet
+    cd ..
+    
+    # Install frontend dependencies
+    echo "📦 Installing frontend dependencies..."
+    cd frontend
+    npm install --silent
+    cd ..
+    
+    echo ""
+    echo "✅ Dependencies installed!"
+    echo ""
+    echo "🔥 Starting services..."
+    echo ""
+    
+    # Start backend in background
+    echo "🐍 Starting Python backend on http://localhost:8000"
+    cd backend
+    poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000 &
+    BACKEND_PID=$!
+    cd ..
+    
+    # Wait a moment for backend to start
+    sleep 2
+    
+    # Start frontend in background
+    echo "⚛️  Starting Next.js frontend on http://localhost:3000"
+    cd frontend
+    npm run dev &
+    FRONTEND_PID=$!
+    cd ..
+    
+    echo ""
+    echo "🎉 Hygieia is running!"
+    echo ""
+    echo "📊 Health Dashboard: http://localhost:3000"
+    echo "🔧 API Documentation: http://localhost:8000/docs"
+    echo ""
+    echo "Press Ctrl+C to stop all services"
+    
+    # Function to cleanup processes
+    cleanup() {
+      echo ""
+      echo "🛑 Stopping services..."
+      kill $BACKEND_PID 2>/dev/null || true
+      kill $FRONTEND_PID 2>/dev/null || true
+      echo "✅ All services stopped"
+      exit 0
+    }
+    
+    # Trap Ctrl+C
+    trap cleanup SIGINT
+    
+    # Wait for processes
+    wait
+    ;;
+    
+  "stop")
+    echo "🛑 Stopping Hygieia services..."
+    pkill -f "uvicorn main:app" || true
+    pkill -f "next dev" || true
+    echo "✅ Services stopped"
+    ;;
+    
+  *)
+    echo "Hygieia Development Script"
+    echo ""
+    echo "Usage:"
+    echo "  ./dev start    Start backend and frontend"
+    echo "  ./dev stop     Stop all services"
+    echo ""
+    echo "URLs:"
+    echo "  http://localhost:3000  - Health Dashboard"
+    echo "  http://localhost:8000  - API Documentation"
+    ;;
+esac
