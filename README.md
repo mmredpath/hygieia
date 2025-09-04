@@ -2,6 +2,12 @@
 
 A full-stack application that unifies disparate health data streams to provide actionable, personalized insights.
 
+## Hackathon Demo Recording
+
+Screen recording: https://vimeo.com/1116001103?share=copy
+
+Google meet recording (which I thought I lost): 
+
 ## Hackathon Solution
 
 **Problem**: Health-conscious individuals are drowning in fragmented data from multiple sources (wearables, apps, devices), making it impossible to see the bigger picture.
