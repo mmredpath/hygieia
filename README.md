@@ -10,13 +10,14 @@ A full-stack application that unifies disparate health data streams to provide a
 
 ## Key Features
 
+- **Trainable AI Models**: Personal ML models learn from your unique health patterns
 - **Multi-source Integration**: Oura Ring + Apple Health + Nutrition tracking
-- **AI Correlation Discovery**: Finds patterns like "sleep affects sugar cravings by 30%"
+- **AI Correlation Discovery**: Finds patterns like "sleep affects activity by 30%"
+- **Interactive AI Chat**: Ask questions and get personalized, data-driven answers
+- **One-Click Training**: Train your personal AI model with a single button
 - **Unified Health Story**: Cohesive narrative connecting all metrics
 - **Proactive Anomaly Detection**: Alerts for elevated heart rate, sleep debt
 - **Actionable Insights**: Specific recommendations with quantified impact
-- **Interactive AI Chat**: Ask questions about your health patterns
-- **8 UI Layouts**: Multiple visualization approaches
 
 ## Quick Start
 
@@ -34,7 +35,7 @@ Visit: http://localhost:3000
 - **Frontend**: Next.js + TypeScript + Tailwind CSS
 - **Backend**: Python + FastAPI + SQLAlchemy  
 - **Database**: PostgreSQL
-- **AI/ML**: Pandas, Scikit-learn, NumPy
+- **AI/ML**: Scikit-learn (trainable models), Pandas, NumPy
 - **APIs**: Oura Ring API, Apple HealthKit
 
 ## Project Structure
@@ -66,10 +67,12 @@ hygieia/
 - **Comprehensive dashboard** showing interconnected health metrics
 
 ### AI Application
-- **Correlation analysis** discovering sleep-nutrition relationships
-- **Anomaly detection** for proactive health alerts  
-- **Predictive insights** with 3-day, 7-day, 14-day forecasts
-- **Interactive AI chat** for personalized health questions
+- **Trainable ML models** that learn from your personal health data
+- **Personalized predictions** for optimal sleep, activity, and recovery
+- **Interactive AI chat** with data-driven, conversational responses
+- **Correlation analysis** discovering relationships in your actual data
+- **Anomaly detection** for proactive health alerts
+- **Predictive insights** based on your individual patterns
 
 ## Development
 
@@ -92,8 +95,8 @@ docker-compose up postgres
 
 1. **Real Data Integration** - Uses actual Oura Ring API, not mock data
 2. **Health Story Narrative** - Unique cohesive storytelling approach
-3. **Comprehensive AI** - 4 AI feature types: insights, warnings, recommendations, predictions
-4. **Multiple UI Layouts** - 8 visualization approaches for different user needs
+3. **Trainable Personal AI** - ML models trained on your data for personalized insights
+4. **One-Click AI Training** - Accessible ML training for personalized health insights
 5. **Quantified Actionability** - Specific recommendations with expected outcomes
 
 ## Data Sources
@@ -106,9 +109,9 @@ docker-compose up postgres
 
 1. **Connect Oura Ring** → Real sleep, activity, readiness data
 2. **Upload Apple Health** → Comprehensive historical data  
-3. **View Health Story** → Cohesive narrative of health patterns
-4. **Explore AI Insights** → Correlation discoveries and predictions
-5. **Try Different UI Layouts** → 8 visualization approaches
-6. **Ask AI Questions** → Interactive health pattern analysis
+3. **Train Personal AI** → One-click ML model training on your data
+4. **Chat with AI** → Ask questions, get personalized insights
+5. **View Health Story** → Cohesive narrative of health patterns
+6. **Explore Predictions** → "What if I sleep 8 hours?" scenarios
 
 Built for the Health Data Unification Hackathon
