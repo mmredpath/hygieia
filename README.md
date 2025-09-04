@@ -6,7 +6,7 @@ A full-stack application that unifies disparate health data streams to provide a
 
 Screen recording: https://vimeo.com/1116001103?share=copy
 
-Google meet recording (which I thought I lost): 
+Google meet recording (which I thought I lost): https://vimeo.com/1116001330?share=copy
 
 ## Hackathon Solution
 
